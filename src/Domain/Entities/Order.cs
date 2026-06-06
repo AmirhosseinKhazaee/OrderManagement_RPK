@@ -1,3 +1,5 @@
+
+namespace Domain.Entities;
 public class Order : BaseEntity
 {
     public int CustomerId { get; set; }
