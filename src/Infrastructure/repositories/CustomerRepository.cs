@@ -3,6 +3,8 @@ using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+namespace Infrastructure.Repositories;
+
 public class CustomerRepository : Repository<Customer>, ICustomerRepository
 {
     public CustomerRepository(AppDbContext context) : base(context) { }
@@ -14,10 +16,14 @@ public class CustomerRepository : Repository<Customer>, ICustomerRepository
             .ThenInclude(o => o.Items)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
-    public async Task<bool> EmailExistsAsync(string email)
+    public async Task<bool> EmailExistsAsync(string email, int? excludeCustomerId = null)
     {
-        return await _context.Customers
-            .AnyAsync(x => x.Email == email);
+        var query = _context.Customers.Where(x => x.Email == email);
+
+        if (excludeCustomerId.HasValue)
+            query = query.Where(x => x.Id != excludeCustomerId.Value);
+
+        return await query.AnyAsync();
     }
     public async Task<List<TopCustomerDto>> GetTopCustomersAsync(int count)
     {

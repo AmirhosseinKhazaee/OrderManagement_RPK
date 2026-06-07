@@ -36,16 +36,14 @@ public class CustomersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(
-        CreateCustomerDto dto)
+    public async Task<IActionResult> Create(CreateCustomerDto dto)
     {
         var id = await _service.CreateAsync(dto);
+        var result = await _service.GetByIdAsync(id);
 
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id },
-            null);
+        return CreatedAtAction(nameof(GetById), new { id }, result);
     }
+
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateCustomerDto dto)
     {
@@ -56,21 +54,15 @@ public class CustomersController : ControllerBase
 
         return NoContent();
     }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        try
-        {
-            var result = await _service.DeleteAsync(id);
+        var result = await _service.DeleteAsync(id);
 
-            if (!result)
-                return NotFound();
+        if (!result)
+            return NotFound();
 
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return NoContent();
     }
 }

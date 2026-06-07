@@ -1,13 +1,10 @@
 using Application.DTOs.Orders;
 using FluentValidation;
 
-public class CreateOrderDtoValidator : AbstractValidator<CreateOrderDto>
+public class UpdateOrderDtoValidator : AbstractValidator<UpdateOrderDto>
 {
-    public CreateOrderDtoValidator()
+    public UpdateOrderDtoValidator()
     {
-        RuleFor(x => x.CustomerId)
-            .GreaterThan(0);
-
         RuleFor(x => x.Title)
             .NotEmpty();
 

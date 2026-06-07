@@ -14,7 +14,7 @@ public class ReportsController : ControllerBase
         _customerService = customerService;
     }
 
-    [HttpGet("top-customers")]
+    [HttpGet("customers-top")]
     public async Task<IActionResult> GetTopCustomers([FromQuery] int count = 5)
     {
         var result = await _customerService.GetTopCustomersAsync(count);

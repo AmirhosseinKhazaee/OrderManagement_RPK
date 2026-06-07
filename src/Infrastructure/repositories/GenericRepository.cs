@@ -2,6 +2,8 @@ using Application.interfaces;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+namespace Infrastructure.Repositories;
+
 public class Repository<T> : IRepository<T> where T : class
 {
     protected readonly AppDbContext _context;

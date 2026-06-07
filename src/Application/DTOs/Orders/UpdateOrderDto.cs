@@ -5,4 +5,6 @@ public class UpdateOrderDto
     public string Title { get; set; } = null!;
 
     public string Detail { get; set; } = null!;
+
+    public List<CreateOrderItemDto> Items { get; set; } = new();
 }

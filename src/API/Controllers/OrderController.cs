@@ -15,26 +15,25 @@ public class OrderController : ControllerBase
         _orderService = orderService;
     }
 
-    // CREATE
     [HttpPost]
     public async Task<IActionResult> Create(CreateOrderDto dto)
     {
         var id = await _orderService.CreateAsync(dto);
+        var result = await _orderService.GetByIdAsync(id);
 
-        return CreatedAtAction(nameof(GetById), new { id }, null);
+        return CreatedAtAction(nameof(GetById), new { id }, result);
     }
 
-    // GET ALL
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
     {
-        var result = await _orderService.GetAllAsync(page, pageSize);
+        var result = await _orderService.GetAllAsync(page, pageSize, search);
         return Ok(result);
     }
 
-    // GET BY ID
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -46,7 +45,6 @@ public class OrderController : ControllerBase
         return Ok(result);
     }
 
-    // UPDATE
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateOrderDto dto)
     {
@@ -58,7 +56,6 @@ public class OrderController : ControllerBase
         return NoContent();
     }
 
-    // DELETE
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

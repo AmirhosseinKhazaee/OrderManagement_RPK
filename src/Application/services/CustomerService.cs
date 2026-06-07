@@ -1,3 +1,4 @@
+using Application.Common.Exceptions;
 using Application.DTOs.Customers;
 using Application.interfaces;
 using Application.Interfaces;
@@ -71,7 +72,7 @@ public class CustomerService
         CreateCustomerDto dto)
     {
         if (await _customerRepository.EmailExistsAsync(dto.Email))
-            throw new Exception("Email already exists");
+            throw new ConflictException("Email already exists");
 
         var customer = new Customer
         {
@@ -93,21 +94,24 @@ public class CustomerService
         if (customer == null)
             return false;
 
-        //  Business Rule
         if (customer.Orders.Any())
-            throw new Exception("Customer has orders and cannot be deleted");
+            throw new ConflictException("Customer has orders and cannot be deleted");
 
         _customerRepository.Delete(customer);
         await _customerRepository.SaveChangesAsync();
 
         return true;
     }
+
     public async Task<bool> UpdateAsync(int id, UpdateCustomerDto dto)
     {
         var customer = await _customerRepository.GetByIdAsync(id);
 
         if (customer == null)
             return false;
+
+        if (await _customerRepository.EmailExistsAsync(dto.Email, id))
+            throw new ConflictException("Email already exists");
 
         customer.Name = dto.Name;
         customer.Email = dto.Email;
@@ -117,6 +121,7 @@ public class CustomerService
 
         return true;
     }
+
     public async Task<List<TopCustomerDto>> GetTopCustomersAsync(int count = 5)
     {
         return await _customerRepository.GetTopCustomersAsync(count);

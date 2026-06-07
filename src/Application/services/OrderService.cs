@@ -1,9 +1,11 @@
+using Application.Common.Exceptions;
 using Application.DTOs.Orders;
 using Application.interfaces;
 using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 namespace Application.Services;
+
 public class OrderService
 {
     private readonly IOrderRepository _orderRepository;
@@ -22,45 +24,59 @@ public class OrderService
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId);
 
         if (customer == null)
-            throw new Exception("Customer not found");
+            throw new NotFoundException("Customer not found");
 
-        var order = new Order
+        await _orderRepository.BeginTransactionAsync();
+
+        try
         {
-            CustomerId = dto.CustomerId,
-            Title = dto.Title,
-            Detail = dto.Detail,
-            Items = new List<OrderItem>()
-        };
-
-        decimal total = 0;
-
-        foreach (var item in dto.Items)
-        {
-            var orderItem = new OrderItem
+            var order = new Order
             {
-                ProductName = item.ProductName,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice
+                CustomerId = dto.CustomerId,
+                Title = dto.Title,
+                Detail = dto.Detail,
+                Items = new List<OrderItem>()
             };
 
-            order.Items.Add(orderItem);
+            decimal total = 0;
 
-            total += item.Quantity * item.UnitPrice;
+            foreach (var item in dto.Items)
+            {
+                var orderItem = new OrderItem
+                {
+                    ProductName = item.ProductName,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
+                };
+
+                order.Items.Add(orderItem);
+                total += item.Quantity * item.UnitPrice;
+            }
+
+            order.TotalPrice = total;
+
+            await _orderRepository.AddAsync(order);
+            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.CommitAsync();
+
+            return order.Id;
         }
-
-        order.TotalPrice = total;
-
-        await _orderRepository.AddAsync(order);
-        await _orderRepository.SaveChangesAsync();
-
-        return order.Id;
+        catch
+        {
+            await _orderRepository.RollbackAsync();
+            throw;
+        }
     }
-    public async Task<PagedResult<OrderDto>> GetAllAsync(int page, int pageSize)
+
+    public async Task<PagedResult<OrderDto>> GetAllAsync(int page, int pageSize, string? search = null)
     {
         if (page <= 0) page = 1;
         if (pageSize <= 0) pageSize = 10;
 
-        var query = _orderRepository.Query(); 
+        var query = _orderRepository.Query();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(x => x.Title.Contains(search));
 
         var totalCount = await query.CountAsync();
 
@@ -85,6 +101,7 @@ public class OrderService
             PageSize = pageSize
         };
     }
+
     public async Task<OrderDetailsDto?> GetByIdAsync(int id)
     {
         var order = await _orderRepository.GetOrderWithItemsAsync(id);
@@ -108,6 +125,7 @@ public class OrderService
             }).ToList()
         };
     }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var order = await _orderRepository.GetByIdAsync(id);
@@ -120,19 +138,50 @@ public class OrderService
 
         return true;
     }
+
     public async Task<bool> UpdateAsync(int id, UpdateOrderDto dto)
     {
-        var order = await _orderRepository.GetByIdAsync(id);
+        var order = await _orderRepository.GetOrderWithItemsAsync(id);
 
         if (order == null)
             return false;
 
-        order.Title = dto.Title;
-        order.Detail = dto.Detail;
+        await _orderRepository.BeginTransactionAsync();
 
-        _orderRepository.Update(order);
-        await _orderRepository.SaveChangesAsync();
+        try
+        {
+            order.Title = dto.Title;
+            order.Detail = dto.Detail;
 
-        return true;
+            order.Items.Clear();
+
+            decimal total = 0;
+
+            foreach (var item in dto.Items)
+            {
+                var orderItem = new OrderItem
+                {
+                    ProductName = item.ProductName,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
+                };
+
+                order.Items.Add(orderItem);
+                total += item.Quantity * item.UnitPrice;
+            }
+
+            order.TotalPrice = total;
+
+            _orderRepository.Update(order);
+            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.CommitAsync();
+
+            return true;
+        }
+        catch
+        {
+            await _orderRepository.RollbackAsync();
+            throw;
+        }
     }
 }
