@@ -19,4 +19,19 @@ public class CustomerRepository : Repository<Customer>, ICustomerRepository
         return await _context.Customers
             .AnyAsync(x => x.Email == email);
     }
+    public async Task<List<TopCustomerDto>> GetTopCustomersAsync(int count)
+    {
+        return await _context.Customers
+            .Include(x => x.Orders)
+            .Select(c => new TopCustomerDto
+            {
+                CustomerId = c.Id,
+                CustomerName = c.Name,
+                Email = c.Email,
+                TotalSpent = c.Orders.Sum(o => o.TotalPrice)
+            })
+            .OrderByDescending(x => x.TotalSpent)
+            .Take(count)
+            .ToListAsync();
+    }
 }

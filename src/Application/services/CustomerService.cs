@@ -93,7 +93,7 @@ public class CustomerService
         if (customer == null)
             return false;
 
-        // 🚨 Business Rule
+        //  Business Rule
         if (customer.Orders.Any())
             throw new Exception("Customer has orders and cannot be deleted");
 
@@ -116,5 +116,9 @@ public class CustomerService
         await _customerRepository.SaveChangesAsync();
 
         return true;
+    }
+    public async Task<List<TopCustomerDto>> GetTopCustomersAsync(int count = 5)
+    {
+        return await _customerRepository.GetTopCustomersAsync(count);
     }
 }

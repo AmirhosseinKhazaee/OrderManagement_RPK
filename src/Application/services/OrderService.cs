@@ -60,7 +60,7 @@ public class OrderService
         if (page <= 0) page = 1;
         if (pageSize <= 0) pageSize = 10;
 
-        var query = _orderRepository.Query(); // مهم 👇
+        var query = _orderRepository.Query(); 
 
         var totalCount = await query.CountAsync();
 
